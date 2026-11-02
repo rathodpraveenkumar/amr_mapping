@@ -1,0 +1,153 @@
+<?xml version="1.0"?>
+
+<robot name="robot">
+
+    <!-- Webots integration -->
+    <webots>
+        <plugin type="amr_mapping.robot_driver.driveMyRobot" />
+    </webots>
+
+
+    <!-- =========================
+         BASE
+         ========================= -->
+
+    <link name="base_link">
+
+        <visual>
+            <origin xyz="0 0 0.05" rpy="0 0 0"/>
+
+            <geometry>
+                <box size="0.25 0.25 0.10"/>
+            </geometry>
+
+        </visual>
+
+    </link>
+
+
+    <!-- =========================
+         UPPER DECK
+         ========================= -->
+
+    <link name="upper_deck">
+
+        <visual>
+
+            <origin xyz="0 0 0.02"/>
+
+            <geometry>
+                <box size="0.20 0.20 0.04"/>
+            </geometry>
+
+        </visual>
+
+    </link>
+
+    <joint name="base_to_upper_deck"
+           type="fixed">
+
+        <parent link="base_link"/>
+        <child link="upper_deck"/>
+
+        <origin xyz="0 0 0.11"/>
+
+    </joint>
+
+
+    <!-- =========================
+         LIDAR
+         ========================= -->
+
+    <link name="laser_link">
+
+        <visual>
+
+            <origin xyz="0 0 0"/>
+
+            <geometry>
+                <cylinder radius="0.045"
+                           length="0.035"/>
+            </geometry>
+
+        </visual>
+
+    </link>
+
+
+    <joint name="base_to_laser"
+          type="fixed">
+
+        <parent link="base_link"/>
+        <child link="laser_link"/>
+
+        <origin xyz="0 0 0.145"/>
+
+    </joint>
+
+
+    <!-- =========================
+         LEFT WHEEL
+         ========================= -->
+
+    <link name="left_wheel">
+
+        <visual>
+
+            <origin xyz="0 0 0"
+                    rpy="1.5708 0 0"/>
+
+            <geometry>
+                <cylinder radius="0.05"
+                           length="0.025"/>
+            </geometry>
+
+        </visual>
+
+    </link>
+
+
+    <joint name="left_wheel_joint"
+          type="fixed">
+
+        <parent link="base_link"/>
+        <child link="left_wheel"/>
+
+        <origin xyz="0 0.125 0"/>
+
+    </joint>
+
+
+    <!-- =========================
+         RIGHT WHEEL
+         ========================= -->
+
+    <link name="right_wheel">
+
+        <visual>
+
+            <origin xyz="0 0 0"
+                    rpy="1.5708 0 0"/>
+
+            <geometry>
+                <cylinder radius="0.05"
+                           length="0.025"/>
+            </geometry>
+
+        </visual>
+
+    </link>
+
+
+    <joint name="right_wheel_joint"
+          type="fixed">
+
+        <parent link="base_link"/>
+        <child link="right_wheel"/>
+
+        <origin xyz="0 -0.125 0"/>
+
+    </joint>
+
+
+</robot>

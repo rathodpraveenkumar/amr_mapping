@@ -1,0 +1,224 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/solids/protos/SolidBox.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/devices/slamtec/protos/RpLidarA2.proto"
+
+WorldInfo {
+  basicTimeStep 64
+}
+Viewpoint {
+  orientation -0.19454369995050197 0.04832390064599445 0.9797027862754729 2.6641787051436885
+  position 22.631369750319045 -11.8481271867328 10.66919188894097
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 20 20
+  floorAppearance Parquetry {
+    type "light strip"
+  }
+  wallHeight 0.5
+}
+DEF Robot Robot {
+  name "robot"
+  rotation 1 0 0 0
+  children [
+    Solid {
+      translation 0 0 0.13
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 0 0
+          }
+          geometry Box {
+            size 0.3 0.3 0.015
+          }
+        }
+      ]
+      name "topBase"
+    }
+    Solid {
+      translation 0.1 0.1 0.115
+      children [
+        Shape {
+          appearance PBRAppearance {
+            roughness 1
+          }
+          geometry Cylinder {
+            height 0.03
+            radius 0.01
+          }
+        }
+      ]
+      name "basePillar1"
+    }
+    Solid {
+      translation -0.1 -0.1 0.115
+      children [
+        Shape {
+          appearance PBRAppearance {
+            roughness 1
+          }
+          geometry Cylinder {
+            height 0.03
+            radius 0.01
+          }
+        }
+      ]
+      name "basePillar2"
+    }
+    Solid {
+      translation -0.1 0.1 0.115
+      children [
+        Shape {
+          appearance PBRAppearance {
+            roughness 1
+          }
+          geometry Cylinder {
+            height 0.03
+            radius 0.01
+          }
+        }
+      ]
+      name "basePillar3"
+    }
+    Solid {
+      translation 0.1 -0.1 0.115
+      children [
+        Shape {
+          appearance PBRAppearance {
+            roughness 1
+          }
+          geometry Cylinder {
+            height 0.03
+            radius 0.01
+          }
+        }
+      ]
+      name "basePillar4"
+    }
+    Lidar {
+      translation 0 0 0.145
+      children [
+        Solid {
+          children [
+            RpLidarA2 {
+            }
+          ]
+        }
+      ]
+      horizontalResolution 360
+      fieldOfView 6.28
+      numberOfLayers 1
+      maxRange 15
+    }
+    DEF hingeJoint_Left HingeJoint {
+      jointParameters HingeJointParameters {
+        position -6.734302761772734e-10
+        axis 0 1 0
+        anchor 0 0.125 0.05
+      }
+      device [
+        PositionSensor {
+          name "position_sensor_L"
+        }
+        RotationalMotor {
+          name "rotational_motor_L"
+          maxVelocity 50
+        }
+      ]
+      endPoint Solid {
+        translation 0 0.125 0.05
+        rotation 1 0 0 1.57
+        children [
+          DEF wheelLeft Shape {
+            appearance PBRAppearance {
+              baseColor 0 0 0
+            }
+            geometry Cylinder {
+              height 0.05
+              radius 0.05
+            }
+          }
+        ]
+        name "wheelLeft"
+        boundingObject USE wheelLeft
+        physics Physics {
+        }
+      }
+    }
+    DEF hingeJoint_RIght HingeJoint {
+      jointParameters HingeJointParameters {
+        position -5.304596378286462e-10
+        axis 0 1 0
+        anchor 0 -0.125 0.05
+      }
+      device [
+        PositionSensor {
+          name "position_sensor_R"
+        }
+        RotationalMotor {
+          name "rotational_motor_R"
+          maxVelocity 50
+        }
+      ]
+      endPoint Solid {
+        translation 0 -0.125 0.05
+        rotation 0.9999999999999998 -1.3006614520660202e-08 1.2996261126801836e-08 1.57
+        children [
+          DEF wheelRight Shape {
+            appearance PBRAppearance {
+              baseColor 0 0 0
+            }
+            geometry Cylinder {
+              height 0.05
+              radius 0.05
+            }
+          }
+        ]
+        name "wheelRight"
+        boundingObject USE wheelRight
+        physics Physics {
+        }
+      }
+    }
+    DEF robot_pose Pose {
+      translation 0 0 0.0515
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Box {
+            size 0.25 0.25 0.1
+          }
+        }
+      ]
+    }
+  ]
+  boundingObject USE robot_pose
+  physics Physics {
+  }
+  controller "<extern>"
+  supervisor TRUE
+}
+SolidBox {
+  translation 8 -8 0.5
+  name "box1"
+  size 1 1 1
+}
+SolidBox {
+  translation 6 -3 0.5
+  name "box2"
+  size 1 1 1
+}
+SolidBox {
+  translation 3 7 0.5
+  name "box4"
+  size 1 1 1
+}
