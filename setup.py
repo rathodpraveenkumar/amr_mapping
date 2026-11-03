@@ -27,7 +27,7 @@ setup(
         ],
     },
     entry_points={
-        'console_scripts': ['navigator = amr_mapping.navigator:main',
+        'console_scripts': ['navigator = amr_mapping.navigator:main', 'grid_mapper = amr_mapping.grid_mapper:main',
         ],
     },
 )

@@ -5,6 +5,8 @@ from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped 
 from sensor_msgs.msg import LaserScan
 import numpy as np
+from nav_msgs.msg import OccupancyGrid
+from std_msgs.msg import Header
 
 class gridMapper(Node) :
     def __init__(self, map_length, map_width, cell_length, cell_width, lo, l_free, l_occ) :
@@ -13,7 +15,7 @@ class gridMapper(Node) :
         # Subscribers
 
         # LaserScan Subscriber
-        self.create_subscription(LaserScan, "laser_scan", self.__callback_laser_scan, 10)
+        self.create_subscription(LaserScan, "scan", self.__callback_laser_scan, 10)
         self.__laser_scan_msg = LaserScan()
 
         # GroundTruth Subscriber
@@ -22,6 +24,13 @@ class gridMapper(Node) :
 
         # Publishers
 
+        # Map Publisher
+        self.__map_publisher = self.create_publisher(OccupancyGrid, "map", 10)
+        self.map_msg = OccupancyGrid()
+
+
+        # Timer     
+        self.timer = self.create_timer(0.5, self.__publish_map)
 
         # Mapper implementation
 
@@ -29,7 +38,7 @@ class gridMapper(Node) :
         self.__map_length = map_length
         self.__map_width = map_width
 
-        self.__map_length = cell_length
+        self.__cell_length = cell_length
         self.__cell_width = cell_width
 
         # Rows and Columns
@@ -55,10 +64,69 @@ class gridMapper(Node) :
     # LaserScan Callback
     def __callback_laser_scan(self, laser_scan_msg) :
         self.__laser_scan_msg = laser_scan_msg
+        self.__new_laser_scan = True
 
     # GroundTruth Callback
     def __callback_ground_truth(self, ground_truth_msg) :
         self.__ground_truth_msg = ground_truth_msg
+        self.__new_ground_truth = True
+
+    def __get_pose(self) :
+        "Returns Pose from Ground truth"
+
+    def __get_measurement(self) :
+        "Returns Measurement from LaserScan and maximum distance and Angle Resolution"
+
+    # Map Publisher
+    def __publish_map(self) :
+        "PUBLISHES MAP IF BOTH POSE AND MEASUREMENT ARE AVALIABLE"
+        if self.__new_ground_truth and self.__new_laser_scan :
+
+            x_t = self.__get_pose()
+            z_t, z_max, ang_res = self.__get_measurement()
+
+            self.likelihood = self.binary_occupancy_grid_mapping(x_t = x_t, z_t = z_t, z_max = z_max, alpha = self.__cell_length, beta = ang_res)
+
+
+            
+            map_msg =  self.__create_map_message()
+    
+        self.__map_publisher.publish(map_msg)
+        self.reset_variables()
+
+
+
+    def __create_map_message(self) :
+        self.map_msg = OccupancyGrid()
+
+        self.map_msg.header.frame_id = 'world'
+        self.map_msg.header.stamp = self.get_clock().now().to_msg()
+
+        self.map_msg.info.resolution = 0.4
+        self.map_msg.info.width = self.__M
+        self.map_msg.info.height = self.__N
+
+        self.map_msg.info.origin.position.x = -self.__cell_width
+        self.map_msg.info.origin.position.y = -self.__cell_length
+        self.map_msg.info.origin.position.z = 0.0
+
+        self.map_msg.info.origin.orientation.x = 0.0
+        self.map_msg.info.origin.orientation.y = 0.0
+        self.map_msg.info.origin.orientation.z = 0.0
+        self.map_msg.info.origin.orientation.w = 1.0
+
+        self.map_msg.data = self.get_map_data_from_likelihood()
+
+
+    def get_map_data_from_likelihood(self) :
+        "Returns the log likelihood in compatible form to ROS OccupancyGrid instance"
+        return round(100*(1/(1 + np.exp(-self.likelihood))))
+
+
+    def reset_variables(self) :
+        self.__new_ground_truth = False
+        self.__new_laser_scan = False
+
 
     def get_row_and_col(self) :
         "Returns the number of Rows and Columns of the map"
@@ -66,13 +134,13 @@ class gridMapper(Node) :
         N = 0
         M = 0
         # Check if the parameters are valid
-        if np.min((self.map_length, self.map_width, self.cell_length, self.cell_width)) <= 0 :
+        if np.min((self.__map_length, self.__map_width, self.__cell_length, self.__cell_width)) <= 0 :
             return 0
 
         # Calculate the number of Rows and Columns
         else :
-            N = self.map_width/self.cell_width
-            M = self.map_length/self.cell_length
+            N = self.__map_width/self.__cell_width
+            M = self.__map_length/self.__cell_length
 
         return int(N), int(M)
 
@@ -85,8 +153,8 @@ class gridMapper(Node) :
     def set_initial_likelihood(self) :
         "Sets 1/2 as the Initial likelihood to each cell"
 
-        likelihood = [[self.lo for j in range(self.__M)] for i in range(self.__N)]
-        return np.array(likelihood)
+        self.likelihood = np.array([[self.lo for j in range(self.__M)] for i in range(self.__N)])
+        
 
     def get_matrix_indices(self, i) :
         """ Returns the row number and column number of the matrix of size NxM"
@@ -110,23 +178,23 @@ class gridMapper(Node) :
 
     def is_in_perceptual_range(self, i, x_t, ranges, angle_min, angle_increment, z_max,beta):
 
-        # 1. Get cell centre in world coordinates
+        # Get cell centre in world coordinates
         m_x, m_y = self.get_cell_center(i)
 
-        # 2. Robot pose
+        # Robot pose
         x_R, y_R, theta_R = x_t
 
         # Assumption: LiDAR is at robot origin
         # and aligned with robot heading
 
-        # 3. Relative position of cell
+        # Relative position of cell
         dx = m_x - x_R
         dy = m_y - y_R
 
-        # 4. Distance from LiDAR to cell
+        # Distance from LiDAR to cell
         r = np.sqrt(dx**2 + dy**2)
 
-        # 5. Bearing of cell relative to LiDAR
+        # Bearing of cell relative to LiDAR
         phi = self.wrap_angle(
             np.arctan2(dy, dx) - theta_R
         )
@@ -169,7 +237,7 @@ class gridMapper(Node) :
         return (angle + np.pi)%(2*np.pi) - np.pi
 
 
-    def inverse_sensor_model(self, cell, r, phi, z_t, z_max, alpha, beta) :
+    def inverse_sensor_model(self, r, phi, z_t, z_max, alpha) :
         "Returns the likelihood of the map cell"
 
     
@@ -177,18 +245,18 @@ class gridMapper(Node) :
         phi = phi
 
         if r > min(z_max, z_t + alpha/2) :
-            return lo
+            return self.lo
 
         elif (z_t < z_max) and np.abs(z_t - r) <= alpha/2 :
-            return l_occ
+            return self.l_occ
 
         elif r < z_t :
-            return l_free
+            return self.l_free
 
-        return lo
+        return self.lo
 
 
-    def binary_occupancy_grid_mapping(map, likelihood, lo, l_occ, l_free, x_t, z_t, z_max, alpha, beta) :
+    def binary_occupancy_grid_mapping(self, x_t, z_t, z_max, alpha, beta) :
         """Returns the approximated likelihood of map m given the state and the measurement at time t"
             It has been assumed the Initial position or the state of the Robot is known
 
@@ -202,46 +270,47 @@ class gridMapper(Node) :
             """
 
         # Iterate over map cells
-        for i in range(map.rows()*map.cols()) :
+        for i in range(self.rows()*self.cols()) :
 
             # Get the row and column of the ith map cell
-            n, m = map.get_matrix_indices(i = i)        
+            n, m = self.get_matrix_indices(i = i)        
 
             # Likelihood of the cell
-            lkd = likelihood[n, m]
+            lkd = self.likelihood[n, m]
             lkd_initial = lkd
             # Cell
-            cell = map.get_cell_center(i)
+            cell = self.get_cell_center(i)
 
             angle_min = np.radians(180)
 
             angle_increment = -np.radians(1)
         
             # Check if the map cell is in the perceptual range of the robot or specifically the sensor
-            inside, k, r, phi = map.is_in_perceptual_range(i = i, x_t = x_t, ranges = z_t, angle_min = angle_min, angle_increment = angle_increment, z_max = z_max, beta = beta)
+            inside, k, r, phi = self.is_in_perceptual_range(i = i, x_t = x_t, ranges = z_t, angle_min = angle_min, angle_increment = angle_increment, z_max = z_max, beta = beta)
 
             
 
             if inside :
                 measured_range = z_t[k]
                 #Update the likelihood of the cell   
-                lkd = lkd + inverse_sensor_model(cell = cell, lo = lo, l_occ = l_occ, l_free = l_free, r = r, phi = phi, z_t = measured_range, z_max = z_max, alpha = alpha, beta = beta) - lo
+                lkd = lkd + self.inverse_sensor_model(r = r, phi = phi, z_t = measured_range, z_max = z_max, alpha = alpha) - self.lo
 
             else :
                 lkd = lkd
 
-            likelihood[n, m] = lkd
-
-            # Print the cell details before and after considering the position and measurement
-            if n == map.rows() - 1 :
-
-                print(f"Cell : ROw {n} Col {m}")
-                print(f"Initial Likelihood : {lkd_initial} ")
-
-                print(f'Cell location in world frame {cell} {"\n"}Measurement associated {measured_range} at a heading of {np.degrees(angle_min + k*angle_increment)}')
-                print(f"Computed Range and Bearing of the cell from the lidar {r} m  {phi} deg ")
-                print(f"Likelihood after : {lkd}")
-                print("----------------------------------------------------------------------------------------------------------------------------------------------")
+            self.likelihood[n, m] = lkd
 
 
-        return likelihood
+
+        
+
+def main(args = None) :
+    rclpy.init(args = args)
+    grid_mapper = gridMapper(20., 20., 0.40, 0.40, 0., -0.8473, 0.8473)
+    rclpy.spin_once(grid_mapper)
+
+    grid_mapper.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == 'main' :
+    main()
