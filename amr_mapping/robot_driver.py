@@ -11,6 +11,7 @@ from geometry_msgs.msg import PoseStamped
 class driveMyRobot :
 
     def init(self, webots_node, properties) :
+        print("DEBUG: DRIVER INIT STARTED", flush=True)
         self.__robot = webots_node.robot
 
         # Robot Node
@@ -97,6 +98,7 @@ class driveMyRobot :
         # Ground Truth Publisher    
         self.__ground_truth_publisher = self.__node.create_publisher(PoseStamped, "ground_truth", 10)
 
+        print("DEBUG: DRIVER INIT COMPLETED", flush=True)
 
     # Call back methods
 
@@ -106,7 +108,7 @@ class driveMyRobot :
 
 
     def step(self) :
-
+        print("DEBUG: DRIVER STEP EXECUTING", flush=True)
         rclpy.spin_once(self.__node, timeout_sec = 0)
 
         # Ground Truth 
@@ -141,17 +143,17 @@ class driveMyRobot :
 
         # Lidar Data and Publishing
         lidar_scan = self.__lidar.getRangeImage()
-        lidar_scan = [scan if np.isfinite(float(scan)) else 0. for scan in lidar_scan]
+        lidar_scan = [float(scan) if np.isfinite(float(scan)) else 0. for scan in lidar_scan]
 
         lidar_scan_msg = LaserScan()
         lidar_scan_msg.header.stamp = self.__node.get_clock().now().to_msg()
         lidar_scan_msg.header.frame_id = "laser_link"
-        lidar_samples = 360
-        lidar_scan_msg.angle_min = -np.pi
-        lidar_scan_msg.angle_max = np.pi
-        lidar_scan_msg.angle_increment = -1*(np.pi/180)
-        lidar_scan_msg.range_max = 15
-        lidar_scan_msg.range_min = 0.01
+        
+        lidar_scan_msg.angle_min = float(-np.pi)
+        lidar_scan_msg.angle_max = float(np.pi)
+        lidar_scan_msg.angle_increment = float(-np.pi/180)
+        lidar_scan_msg.range_max = float(15)
+        lidar_scan_msg.range_min = float(0.01)
         lidar_scan_msg.ranges = lidar_scan
 
         self.__lidarscan_publisher.publish(lidar_scan_msg)
