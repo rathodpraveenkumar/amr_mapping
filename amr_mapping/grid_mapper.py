@@ -256,11 +256,13 @@ class gridMapper(Node) :
         )
 
         # 8. Check beam angular width and sensing range
-        if angular_error <= beta / 2 and r <= z_max:
+        if angular_error <= 100 and r <= z_max:
 
             return True, k, r, phi
 
         return False, None, r, phi
+
+        
 
 
     def wrap_angle(self, angle) :

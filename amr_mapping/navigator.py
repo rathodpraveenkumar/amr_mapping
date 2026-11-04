@@ -22,7 +22,7 @@ class myRobotNavigator(Node) :
         cmd_vel = Twist()
 
         # Parameter setting
-        cmd_vel.linear.x = 0.1
+        cmd_vel.linear.x = 0.3
         cmd_vel.angular.z = 0.0
 
         # Publish

@@ -26,12 +26,14 @@ def generate_launch_description() :
     # Grid Mapper
     grid_mapper = Node(package = 'amr_mapping', executable = 'grid_mapper')
 
-
     with open(robot_description_path, 'r') as file :
         robot_description = file.read()
+
+    # URDF File 
+    robot_state_publisher = Node(package = 'robot_state_publisher', executable = 'robot_state_publisher', name = 'robot_state_publisher', parameters = [{'robot_description' :  robot_description}])
 
     # RviZ2
     rviz = Node(package = 'rviz2', executable = 'rviz2', name = 'rviz2')
    
 
-    return LaunchDescription([webots, robot_driver, navigator, grid_mapper, rviz, launch.actions.RegisterEventHandler(event_handler = launch.event_handlers.OnProcessExit(target_action=webots, on_exit=[launch.actions.EmitEvent(event=launch.events.Shutdown())]))])
+    return LaunchDescription([webots, robot_driver, navigator, grid_mapper, robot_state_publisher, rviz, launch.actions.RegisterEventHandler(event_handler = launch.event_handlers.OnProcessExit(target_action=webots, on_exit=[launch.actions.EmitEvent(event=launch.events.Shutdown())]))])

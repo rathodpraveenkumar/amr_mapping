@@ -155,8 +155,8 @@ class driveMyRobot :
         lidar_scan_msg.header.stamp = self.__node.get_clock().now().to_msg()
         lidar_scan_msg.header.frame_id = "laser_link"
         
-        lidar_scan_msg.angle_min = float(-np.pi)
-        lidar_scan_msg.angle_max = float(np.pi)
+        lidar_scan_msg.angle_min = float(np.pi)
+        lidar_scan_msg.angle_max = float(-np.pi)
         lidar_scan_msg.angle_increment = float(-np.pi/180)
         lidar_scan_msg.range_max = float(15)
         lidar_scan_msg.range_min = float(0.01)
